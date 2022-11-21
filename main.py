@@ -8,6 +8,7 @@ import io
 
 debug: bool = False
 ignore: bool = False
+ignore_underscore: bool = False
 verbose: bool = False
 sleep: bool = False
 pre_def_mapping_loc: str = ""
@@ -30,7 +31,7 @@ def print_info():
 
 
 def print_ignore():
-	print(f"[{Fore.YELLOW}Ignoring{Style.RESET_ALL}]", end=" ")
+	print(f" [{Fore.YELLOW}Ignored{Style.RESET_ALL}]", end=" ")
 
 
 def slice_spritesheet(input_spritesheet: str, size: int):
@@ -41,6 +42,7 @@ def slice_spritesheet(input_spritesheet: str, size: int):
 
 	slices: Image = []
 
+	# Create slices array
 	for y in range(0, numpy.floor(img_size[0] / size).astype(int)):
 		for x in range(0, numpy.floor(img_size[1] / size).astype(int)):
 			if verbose:
@@ -80,6 +82,8 @@ def slice_spritesheet(input_spritesheet: str, size: int):
 	# Slicer
 	i: int = 0
 	for _slice in slices:
+
+		# Translate index to mapping
 		fname: str
 		if len(mappings) > 0 and i < len(mappings) and mappings[i] != "":
 			fname = mappings[i]
@@ -98,6 +102,7 @@ def slice_spritesheet(input_spritesheet: str, size: int):
 		if sleep and not debug:
 			time.sleep(random.randint(1, 2000) / 10000)
 
+		# Check amount of empty pixels
 		empty_pixels: int = 0
 		for pixelx in range(16):
 			for pixely in range(16):
@@ -107,14 +112,17 @@ def slice_spritesheet(input_spritesheet: str, size: int):
 				if pixel[3] == 0:
 					empty_pixels += 1
 
-		if empty_pixels < 16 * 16:
+		# Save slice if slice isn't empty
+		if empty_pixels < 16 * 16 and (fname[0] != "_" or not ignore_underscore):
 			_slice.save(f"{output_dir}/{fname}.png")
 			print_ok()
 		else:
 			print_ignore()
 
-		print(f"Slice {i}/{len(slices)}: {fname}")
+		# Print progress
+		print(f"Slice {i}/{len(slices) - 1}: {fname}")
 
+		# Print amount of empty pixels if debug mode
 		if debug:
 			print_debug()
 			print(f"Empty pixels: {empty_pixels}/{16 * 16}.")
@@ -134,13 +142,16 @@ if __name__ == "__main__":
 			verbose = True
 		if arg == "-s":
 			sleep = True
+		if arg == "-u":
+			ignore_underscore = True
 		if arg == "-h":
 			print("------\n"
 				  "Arguments:\n"
 				  " -d | Debug\n"
 				  " -i | Ignore out of mapping slices\n"
+				  " -u | Ignore underscore entries\n"
 				  " -v | Verbose\n"
-				  " -s | Sleep for 0.05 every slice"
+				  " -s | Sleep for ≈0.05 every slice\n"
 				  " -h | Help (Every other argument will be ignored)\n"
 				  " mappings=PATH | Path to mappings file\n"
 				  " output=PATH   | Path to output directory\n"
@@ -161,3 +172,6 @@ if __name__ == "__main__":
 		print(f"Enter input image:")
 		input_img = input()
 	slice_spritesheet(input_img, 16)
+
+	print_info()
+	print(f"Done!")
